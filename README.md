@@ -84,7 +84,7 @@ monitoring-iac/
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/monitoring-iac.git
+git clone https://github.com/Govindpsd/monitoring-iac.git
 cd monitoring-iac
 
 
