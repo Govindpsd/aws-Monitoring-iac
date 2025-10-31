@@ -1,0 +1,6 @@
+aws_region = "us-east-1"
+instance_type = "t3.medium"
+key_name = "monitoring-key"
+public_key_path = "~/.ssh/id_rsa.pub"
+monitoring_count = 1
+target_count = 1

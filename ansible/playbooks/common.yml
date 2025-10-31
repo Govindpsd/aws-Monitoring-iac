@@ -1,0 +1,19 @@
+# ansible/playbooks/common.yml
+- name: Common setup for all servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt repositories and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+
+    - name: Install essential system utilities
+      apt:
+        name:
+          - wget
+          - curl
+          - tar
+          - unzip
+        state: present
+

@@ -1,0 +1,47 @@
+# ansible/playbooks/node_exporter.yml
+- name: Install Node Exporter on Target VM
+  hosts: node_exporter
+  become: yes
+  tasks:
+    - name: Download Node Exporter binary
+      get_url:
+        url: https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz
+        dest: /tmp/node_exporter.tar.gz
+
+    - name: Extract Node Exporter
+      unarchive:
+        src: /tmp/node_exporter.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Rename extracted directory (if needed)
+      shell: |
+        set -e
+        EXTRACTED_DIR=$(find /opt -maxdepth 1 -type d -name "node_exporter-*")
+        if [ -n "$EXTRACTED_DIR" ] && [ ! -d /opt/node_exporter ]; then
+          mv "$EXTRACTED_DIR" /opt/node_exporter
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Create systemd service for Node Exporter
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          After=network.target
+
+          [Service]
+          ExecStart=/opt/node_exporter/node_exporter
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and start Node Exporter
+      systemd:
+        name: node_exporter
+        enabled: yes
+        state: started
+

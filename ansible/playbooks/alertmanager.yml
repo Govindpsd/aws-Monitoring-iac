@@ -1,0 +1,75 @@
+# ansible/playbooks/alertmanager.yml
+- name: Install and configure Alertmanager
+  hosts: prometheus
+  become: yes
+  vars:
+    smtp_from: "pgovind887@gmail.com"
+    smtp_to: "pgovind887@gmail.com"
+    smtp_user: "pgovind887@gmail.com"
+    smtp_pass: "dzts igpm bbvb djih"  # Replace this with your Gmail App Password
+  tasks:
+    - name: Download Alertmanager binary
+      get_url:
+        url: https://github.com/prometheus/alertmanager/releases/download/v0.27.0/alertmanager-0.27.0.linux-amd64.tar.gz
+        dest: /tmp/alertmanager.tar.gz
+
+    - name: Extract Alertmanager
+      unarchive:
+        src: /tmp/alertmanager.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Rename Alertmanager folder (if needed)
+      shell: |
+        set -e
+        EXTRACTED_DIR=$(find /opt -maxdepth 1 -type d -name "alertmanager-*")
+        if [ -n "$EXTRACTED_DIR" ] && [ ! -d /opt/alertmanager ]; then
+          mv "$EXTRACTED_DIR" /opt/alertmanager
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Create Alertmanager configuration file
+      copy:
+        dest: /opt/alertmanager/alertmanager.yml
+        content: |
+          global:
+            smtp_smarthost: 'smtp.gmail.com:587'
+            smtp_from: '{{ smtp_from }}'
+            smtp_auth_username: '{{ smtp_user }}'
+            smtp_auth_password: '{{ smtp_pass }}'
+            smtp_require_tls: true
+
+          route:
+            receiver: 'email-alert'
+
+          receivers:
+            - name: 'email-alert'
+              email_configs:
+                - to: '{{ smtp_to }}'
+
+    - name: Create systemd service for Alertmanager
+      copy:
+        dest: /etc/systemd/system/alertmanager.service
+        content: |
+          [Unit]
+          Description=Alertmanager
+          After=network.target
+
+          [Service]
+          ExecStart=/opt/alertmanager/alertmanager --config.file=/opt/alertmanager/alertmanager.yml --storage.path=/opt/alertmanager/data
+          Restart=always
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      command: systemctl daemon-reload
+
+    - name: Enable and start Alertmanager
+      systemd:
+        name: alertmanager
+        enabled: yes
+        state: started
+

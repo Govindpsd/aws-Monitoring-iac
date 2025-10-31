@@ -1,0 +1,66 @@
+# ansible/playbooks/blackbox_exporter.yml
+- name: Install and configure Blackbox Exporter
+  hosts: prometheus
+  become: yes
+  tasks:
+    - name: Download Blackbox Exporter binary
+      get_url:
+        url: https://github.com/prometheus/blackbox_exporter/releases/download/v0.25.0/blackbox_exporter-0.25.0.linux-amd64.tar.gz
+        dest: /tmp/blackbox_exporter.tar.gz
+
+    - name: Extract Blackbox Exporter
+      unarchive:
+        src: /tmp/blackbox_exporter.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Rename extracted folder (if needed)
+      shell: |
+        set -e
+        EXTRACTED_DIR=$(find /opt -maxdepth 1 -type d -name "blackbox_exporter-*")
+        if [ -n "$EXTRACTED_DIR" ] && [ ! -d /opt/blackbox_exporter ]; then
+          mv "$EXTRACTED_DIR" /opt/blackbox_exporter
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Create Blackbox configuration file
+      copy:
+        dest: /opt/blackbox_exporter/blackbox.yml
+        content: |
+          modules:
+            http_2xx:
+              prober: http
+              timeout: 5s
+              http:
+                valid_http_versions: ["HTTP/1.1", "HTTP/2"]
+                valid_status_codes: []  # defaults to 2xx
+                method: GET
+                tls_config:
+                  insecure_skip_verify: false
+
+    - name: Create systemd service for Blackbox Exporter
+      copy:
+        dest: /etc/systemd/system/blackbox_exporter.service
+        content: |
+          [Unit]
+          Description=Blackbox Exporter
+          After=network.target
+
+          [Service]
+          ExecStart=/opt/blackbox_exporter/blackbox_exporter --config.file=/opt/blackbox_exporter/blackbox.yml --web.listen-address=":9115"
+          Restart=always
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      command: systemctl daemon-reload
+
+    - name: Enable and start Blackbox Exporter
+      systemd:
+        name: blackbox_exporter
+        enabled: yes
+        state: started
+

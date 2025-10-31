@@ -1,0 +1,124 @@
+# ansible/playbooks/deploy_codermaster.yml
+- name: Deploy Codemaster (Next.js) on Target VM
+  hosts: target
+  become: yes
+  vars:
+    repo_url: "https://github.com/Abhay-Narayan/Codemaster.git"
+    app_root: "/home/ubuntu/codemaster"
+    app_port: 3000
+
+  tasks:
+    # --------------------------------------------------------------------
+    # 1️⃣ Install prerequisites (git, build tools)
+    # --------------------------------------------------------------------
+    - name: Update apt and install required packages
+      apt:
+        name:
+          - git
+          - build-essential
+          - python3
+          - curl
+          - ca-certificates
+        state: present
+        update_cache: yes
+
+    # --------------------------------------------------------------------
+    # 2️⃣ Node.js install tasks are commented out (manual install assumed)
+    # --------------------------------------------------------------------
+    # - name: Install Node.js (handled manually)
+    #   debug:
+    #     msg: "Skipping Node.js install — assumed already present on VM."
+
+    - name: Verify Node.js and npm are present
+      shell: |
+        node -v && npm -v
+      register: node_check
+      failed_when: "'v' not in node_check.stdout"
+      changed_when: false
+
+    - debug:
+        msg: |
+          ✅ Node environment detected:
+          {{ node_check.stdout }}
+
+    # --------------------------------------------------------------------
+    # 3️⃣ Clone project repository
+    # --------------------------------------------------------------------
+    - name: Remove old repo directory if present
+      file:
+        path: "{{ app_root }}"
+        state: absent
+
+    - name: Clone Codemaster repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_root }}"
+        version: main
+        force: yes
+
+    - name: Fix permissions after clone
+      file:
+        path: "{{ app_root }}"
+        owner: ubuntu
+        group: ubuntu
+        recurse: yes
+
+    # --------------------------------------------------------------------
+    # 4️⃣ Install dependencies and build
+    # --------------------------------------------------------------------
+    - name: Install npm dependencies
+      become_user: ubuntu
+      shell: npm ci --legacy-peer-deps --no-audit --no-fund
+      args:
+        chdir: "{{ app_root }}"
+      environment:
+        NODE_ENV: production
+
+    - name: Build Next.js project
+      become_user: ubuntu
+      shell: npm run build
+      args:
+        chdir: "{{ app_root }}"
+
+    # --------------------------------------------------------------------
+    # 5️⃣ Create systemd service
+    # --------------------------------------------------------------------
+    - name: Create systemd service for Codemaster
+      copy:
+        dest: /etc/systemd/system/codemaster.service
+        content: |
+          [Unit]
+          Description=Codemaster Next.js Application
+          After=network.target
+
+          [Service]
+          WorkingDirectory={{ app_root }}
+          ExecStart=/usr/bin/npm start
+          Restart=always
+          User=ubuntu
+          Environment=PORT={{ app_port }}
+          Environment=NODE_ENV=production
+
+          [Install]
+          WantedBy=multi-user.target
+
+    # --------------------------------------------------------------------
+    # 6️⃣ Enable and start service
+    # --------------------------------------------------------------------
+    - name: Reload systemd and start Codemaster app
+      systemd:
+        name: codemaster
+        enabled: yes
+        state: restarted
+
+    # --------------------------------------------------------------------
+    # 7️⃣ Open firewall port
+    # --------------------------------------------------------------------
+    - name: Allow application port in UFW (if installed)
+      shell: "ufw allow {{ app_port }}/tcp"
+      ignore_errors: yes
+
+    - debug:
+        msg: |
+          ✅ Codemaster deployed successfully!
+          🌐 Access it at: http://{{ ansible_host }}:{{ app_port }}
