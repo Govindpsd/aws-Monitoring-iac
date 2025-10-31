@@ -1,3 +1,89 @@
+# --------------------------------------------------------------------
+# 🧠 Terraform
+# --------------------------------------------------------------------
+.terraform/                # Local plugin & module cache
+*.tfstate                  # State files (contain sensitive info)
+*.tfstate.*                # Backup state files
+*.tfvars                   # Variable definition files (secrets)
+terraform.tfvars
+*.tfplan                   # Terraform plan output
+*.backup
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# --------------------------------------------------------------------
+# ⚙️ Ansible
+# --------------------------------------------------------------------
+*.retry                    # Failed playbook retry files
+*.log                      # Playbook logs
+*.vault                    # Encrypted vault files
+*.pem                      # SSH keys
+*.key
+*.crt
+*.pub
+__pycache__/               # Python cache dirs
+*.swp                      # Editor swap files
+*.bak                      # Backup files
+
+# --------------------------------------------------------------------
+# 🧰 SSH and Secrets
+# --------------------------------------------------------------------
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+known_hosts
+.ssh/
+
+# --------------------------------------------------------------------
+# 🪣 AWS & Cloud
+# --------------------------------------------------------------------
+.aws/
+*.pem
+*.p12
+*.cer
+*.csr
+
+# --------------------------------------------------------------------
+# 🧱 Logs and Temporary Files
+# --------------------------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.out
+*.err
+*.pid
+nohup.out
+
+# --------------------------------------------------------------------
+# 💻 OS and IDE Specific
+# --------------------------------------------------------------------
+.DS_Store                  # macOS
+Thumbs.db                  # Windows
+.vscode/                   # VSCode settings (optional)
+.idea/                     # JetBrains IDE configs
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# --------------------------------------------------------------------
+# 🧩 Python Virtual Environments (if used for ansible vaults)
+# --------------------------------------------------------------------
+venv/
+.env/
+.envrc
+*.env
+
+# --------------------------------------------------------------------
+# 🧾 Other
+# --------------------------------------------------------------------
+inventory.ini.backup
+*.tar.gz
+*.zip
+*.tgz
 *.tfstate
 *.tfstate.*
 .terraform/
