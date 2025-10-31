@@ -182,7 +182,7 @@ Notification queue status
 👨‍💻 Author
 Govind Parshad
 Future DevOps Engineer | Infrastructure Automation | Cloud Monitoring
-LinkedIn • GitHub
+
 🏁 Summary
 
 This project demonstrates a complete, automated monitoring solution for AWS using Infrastructure-as-Code.
