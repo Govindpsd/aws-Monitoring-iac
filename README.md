@@ -14,41 +14,9 @@ All components are fully automated — from AWS provisioning to Grafana dashboar
 ---
 
 ## 🏗️ Architecture Overview
+<img width="1024" height="1536" alt="Monitoring-iac" src="https://github.com/user-attachments/assets/8464a2c5-55f4-4037-9eea-15bff4146143" />
 
- ┌──────────────────────────────┐
-                 │          Grafana             │
-                 │  (Dashboards & Visualization)│
-                 │      Port: 3000              │
-                 └────────────┬─────────────────┘
-                              │
-               Prometheus Data Source (Port 9090)
-                              │
-         ┌────────────────────┴────────────────────┐
-         │                                         │
-┌────────────────────┐ ┌──────────────────────┐
-│ Node Exporter │ │ Blackbox Exporter │
-│ (VM Metrics: CPU, │ │ (Uptime, HTTP Probe) │
-│ Memory, Disk, etc.) │ │ Port: 9115 │
-│ Port: 9100 │ └──────────────────────┘
-└────────────────────┘
-│
-│ (All metrics scraped by Prometheus)
-│
-┌──────────────────────────────┐
-│ Prometheus │
-│ (Metrics DB + Alert Rules) │
-│ Port: 9090 │
-└────────────┬─────────────────┘
-│
-┌──────┴──────┐
-│ Alertmanager │
-│ (Email/Slack │
-│ Notifications)│
-│ Port: 9093 │
-└───────────────┘
 
-yaml
-Copy code
 
 ✅ All services are deployed on AWS EC2 instances (t2.micro or t3.micro).  
 ✅ Networking (VPC, subnets, security groups) is fully managed by Terraform.  
@@ -108,20 +76,19 @@ monitoring-iac/
 │ └── security_group/
 └── README.md
 
-yaml
-Copy code
 
 ---
 
 ## 🧩 Setup Guide
 
 ### 1️⃣ Clone the Repository
+
 ```bash
 git clone https://github.com/<your-username>/monitoring-iac.git
 cd monitoring-iac
+
+
 2️⃣ Provision Infrastructure (Terraform)
-bash
-Copy code
 cd terraform
 terraform init
 terraform apply -auto-approve
@@ -133,42 +100,39 @@ This creates:
 
 VPC, subnets, and security groups with proper rules
 
+
 3️⃣ Configure Inventory for Ansible
 After Terraform finishes, note the public IPs from:
 
-bash
-Copy code
 terraform output -json
 Then update ansible/inventory.ini:
 
-ini
-Copy code
 [prometheus]
 monitoring ansible_host=<prometheus_ip> ansible_user=ubuntu
 
 [target]
 node ansible_host=<node_exporter_ip> ansible_user=ubuntu
+
+
 4️⃣ Run Ansible Playbooks
 Common setup (updates system packages)
-bash
-Copy code
+
 ansible-playbook playbooks/common.yml
 Install Node Exporter
-bash
-Copy code
+
 ansible-playbook playbooks/node_exporter.yml
 Install Prometheus
-bash
-Copy code
+
 ansible-playbook playbooks/prometheus.yml
 Install Alertmanager
-bash
-Copy code
+
 ansible-playbook playbooks/alertmanager.yml
 Install Grafana + Import Dashboards
-bash
-Copy code
+
 ansible-playbook playbooks/grafana.yml
+
+
+
 5️⃣ Access Services
 Service	URL	Default Port
 Prometheus	http://<monitoring-ip>:9090	9090
@@ -178,10 +142,8 @@ Node Exporter	http://<target-ip>:9100	9100
 
 Grafana Login:
 
-pgsql
-Copy code
 Username: admin
-Password: admin
+Password: Govind@1602
 ⚡ Example Dashboards
 🖥️ Node Exporter Full (1860)
 CPU utilization
@@ -208,6 +170,7 @@ Active and firing alerts
 Notification queue status
 
 💡 Future Enhancements
+
 🔐 Replace admin credentials with Grafana API key automation
 
 ☁️ Add AWS CloudWatch Exporter for hybrid monitoring
@@ -217,8 +180,8 @@ Notification queue status
 🔔 Integrate Slack/Webhook notifications for alerts
 
 👨‍💻 Author
-Your Name
-DevOps Engineer | Infrastructure Automation | Cloud Monitoring
+Govind Parshad
+Future DevOps Engineer | Infrastructure Automation | Cloud Monitoring
 LinkedIn • GitHub
 🏁 Summary
 
