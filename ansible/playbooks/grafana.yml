@@ -1,7 +1,19 @@
 # ansible/playbooks/grafana.yml
-- name: Install and configure Grafana
+- name: Install and configure Grafana with dashboards
   hosts: prometheus
   become: yes
+  vars:
+    grafana_admin_user: admin
+    grafana_admin_password: Govind@1602          # Change if you reset Grafana password
+    grafana_port: 3000
+    prometheus_url: "http://localhost:9090"
+
+    dashboards:
+      - { id: 1860, name: "Node Exporter Full" }
+      - { id: 3662, name: "Prometheus 2.0 Overview" }
+      - { id: 7587, name: "Blackbox Exporter Overview" }
+      - { id: 9578, name: "Alertmanager Overview" }
+
   tasks:
     # --------------------------------------------------------------------
     # 1️⃣ Install dependencies
@@ -16,7 +28,7 @@
         update_cache: yes
 
     # --------------------------------------------------------------------
-    # 2️⃣ Add Grafana APT repo
+    # 2️⃣ Add Grafana repo and GPG key
     # --------------------------------------------------------------------
     - name: Add Grafana GPG key
       ansible.builtin.apt_key:
@@ -47,9 +59,23 @@
         state: started
 
     # --------------------------------------------------------------------
-    # 5️⃣ Configure Prometheus as Grafana data source
+    # 5️⃣ Wait for Grafana API to be ready
     # --------------------------------------------------------------------
-    - name: Create Prometheus data source configuration
+    - name: Wait until Grafana API is reachable
+      uri:
+        url: "http://localhost:{{ grafana_port }}/api/health"
+        method: GET
+        status_code: 200
+        validate_certs: no
+      register: grafana_health
+      retries: 20
+      delay: 5
+      until: grafana_health.status == 200
+
+    # --------------------------------------------------------------------
+    # 6️⃣ Configure Prometheus as Grafana data source
+    # --------------------------------------------------------------------
+    - name: Configure Prometheus as Grafana data source
       copy:
         dest: /etc/grafana/provisioning/datasources/prometheus.yml
         content: |
@@ -58,15 +84,83 @@
             - name: Prometheus
               type: prometheus
               access: proxy
-              url: http://localhost:9090
+              url: {{ prometheus_url }}
               isDefault: true
               editable: false
 
-    # --------------------------------------------------------------------
-    # 6️⃣ Reload Grafana
-    # --------------------------------------------------------------------
-    - name: Restart Grafana service
+    - name: Restart Grafana to apply datasource config
       systemd:
         name: grafana-server
         state: restarted
 
+    # --------------------------------------------------------------------
+    # 7️⃣ Wait again for Grafana API after restart
+    # --------------------------------------------------------------------
+    - name: Wait for Grafana API after restart
+      uri:
+        url: "http://localhost:{{ grafana_port }}/api/health"
+        method: GET
+        status_code: 200
+        validate_certs: no
+      register: grafana_health_restart
+      retries: 20
+      delay: 5
+      until: grafana_health_restart.status == 200
+
+    # --------------------------------------------------------------------
+    # 8️⃣ Download dashboards from Grafana.com
+    # --------------------------------------------------------------------
+    - name: Download dashboards from grafana.com
+      get_url:
+        url: "https://grafana.com/api/dashboards/{{ item.id }}/revisions/latest/download"
+        dest: "/tmp/{{ item.id }}.json"
+      loop: "{{ dashboards }}"
+
+    # --------------------------------------------------------------------
+    # 9️⃣ Read and import dashboards into Grafana (correct format)
+    # --------------------------------------------------------------------
+    - name: Read downloaded dashboard files from remote host
+      slurp:
+        src: "/tmp/{{ item.id }}.json"
+      register: dashboard_files
+      loop: "{{ dashboards }}"
+
+    - name: Import dashboards into Grafana (correct JSON format)
+      uri:
+        url: "http://localhost:{{ grafana_port }}/api/dashboards/db"
+        method: POST
+        user: "{{ grafana_admin_user }}"
+        password: "{{ grafana_admin_password }}"
+        force_basic_auth: yes
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body: |
+          {
+            "dashboard": {{ item.content | b64decode }},
+            "overwrite": true,
+            "message": "Imported by Ansible"
+          }
+        status_code: 200
+      loop: "{{ dashboard_files.results }}"
+
+    # --------------------------------------------------------------------
+    # 🔟 Clean up temporary dashboard files
+    # --------------------------------------------------------------------
+    - name: Clean up temporary dashboard files
+      file:
+        path: "/tmp/{{ item.id }}.json"
+        state: absent
+      loop: "{{ dashboards }}"
+
+    # --------------------------------------------------------------------
+    # ✅ Final summary message
+    # --------------------------------------------------------------------
+    - debug:
+        msg: |
+          ✅ Imported dashboards successfully!
+          {% for d in dashboards %}
+          - {{ d.name }} (ID: {{ d.id }})
+          {% endfor %}
+          🎨 Grafana is ready at: http://{{ ansible_host }}:{{ grafana_port }}
+          👤 Login with: {{ grafana_admin_user }} / {{ grafana_admin_password }}
