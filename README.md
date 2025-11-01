@@ -179,6 +179,14 @@ Notification queue status
 
 🔔 Integrate Slack/Webhook notifications for alerts
 
+### 🚀 One-Click Deployment
+You can deploy the entire monitoring stack with a single command:
+```bash
+curl -O https://raw.githubusercontent.com/<your-username>/monitoring-iac/main/bootstrap.sh
+chmod +x bootstrap.sh
+./bootstrap.sh
+
+
 👨‍💻 Author
 Govind Parshad
 Future DevOps Engineer | Infrastructure Automation | Cloud Monitoring
