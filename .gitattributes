@@ -1,0 +1,69 @@
+# ============================================================
+# 🌍 Normalize line endings for all text files
+# ============================================================
+* text=auto eol=lf
+
+# ============================================================
+# 🧠 Terraform files
+# ============================================================
+*.tf text diff=terraform
+*.tfvars text diff=terraform
+*.hcl text diff=terraform
+
+# ============================================================
+# ⚙️ Ansible / YAML / Config files
+# ============================================================
+*.yml text diff=yaml
+*.yaml text diff=yaml
+*.ini text diff
+*.cfg text diff
+
+# ============================================================
+# 🧰 Shell scripts and configuration
+# ============================================================
+*.sh text eol=lf
+*.bash text eol=lf
+*.env text eol=lf
+
+# ============================================================
+# 🧱 JSON, Markdown, and Docs
+# ============================================================
+*.json text
+*.md text
+*.txt text
+*.html text
+*.css text
+*.js text
+*.py text
+*.ipynb text
+
+# ============================================================
+# 🪣 Binary files (no diffs, no auto-conversion)
+# ============================================================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.pdf binary
+*.gz binary
+*.zip binary
+*.tar binary
+*.pem binary
+*.key binary
+*.p12 binary
+
+# ============================================================
+# 💾 Ignore diff for lock and state files
+# ============================================================
+*.tfstate -diff
+*.tfstate.* -diff
+*.lock.hcl -diff
+
+# ============================================================
+# 🧾 Miscellaneous
+# ============================================================
+*.log text eol=lf
+*.retry text
+
