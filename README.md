@@ -169,7 +169,7 @@ Active and firing alerts
 
 Notification queue status
 
-💡 Future Enhancements
+💡 #Future Enhancements
 
 🔐 Replace admin credentials with Grafana API key automation
 
